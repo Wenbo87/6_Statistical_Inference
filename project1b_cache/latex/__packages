@@ -1,0 +1,10 @@
+base
+doBy
+dplyr
+ggplot2
+gridExtra
+knitr
+MASS
+plyr
+survival
+xtable

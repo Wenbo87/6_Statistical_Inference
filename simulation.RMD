@@ -1,0 +1,53 @@
+---
+author: "Wenbo Zhang"
+output: pdf_document
+---
+
+"Statistical Inference Assignment" -  Simulation exercise.
+===========================================================
+
+Synopsis
+------------
+The exponential distribution can be simulated in R with rexp(n, lambda) where lambda is the rate parameter. The mean of exponential distribution is 1/lambda and the standard deviation is also also 1/lambda. Set lambda = 0.2 for all of the simulations. In this simulation, we investigate the distribution of averages of 40 exponential(0.2)s. We do a thousand simulated averages of 40 exponentials.
+
+We Illustrate via simulation and associated explanatory text the properties of the distribution of the mean of 40 exponential(0.2)s.  
+  1. Show where the distribution is centered at and compare it to the theoretical center of the distribution.
+  2. Show how variable it is and compare it to the theoretical variance of the distribution.
+  3. Show that the distribution is approximately normal.
+  4. Evaluate the coverage of the confidence interval for 1/lambda: X??1.96Sn. (This only needs to be done for the specific value of lambda).
+
+
+
+Data
+---------------------------------
+
+```{r setoptions, echo=T}
+library(ggplot2)
+data <- data.frame(replicate(1000, mean(rexp(40,0.2))))
+names(data) <- c("x")
+
+```
+
+Showing Distribution
+----------------------
+
+```{r distribution, echo=T}
+g <- ggplot(data, aes(x = x)) + geom_histogram(alpha = .20, binwidth=.3, colour = "black", aes(y = ..density..)) +
+  stat_function(fun=dnorm,size = 1, args=list(mean=mean(data$x), sd=sd(data$x)))+ labs(title="Distribution of random exponetial numbers",
+                                                                                       y="Density") +
+  geom_vline(aes(xintercept=median(x, na.rm=T)), color="red", linetype="dashed", size=1)
+print(g)
+```
+
+SD and Ci calculation
+-------------------------------
+
+```{r ci, echo=T}
+#calculate the confidence interval
+x_bar <- mean(data$x)
+x_sd <- sd(data$x)
+
+x_ci <- round((x_bar +( c(-1, 1) * 1.96 * sd(data$x) / sqrt(length(data$x))) ),2)
+```
+
+The **mean** of my data set is `r x_bar` and the **standard deviation** is `r x_sd` and the **confidence interval** is `r x_ci`

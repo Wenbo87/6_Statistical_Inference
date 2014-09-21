@@ -1,0 +1,148 @@
+---
+author: "Wenbo Zhang"
+output: pdf_document
+---
+
+"Statistical Inference Assignment"
+============================================
+
+The Effect of Vitamin C on Tooth Growth in Guinea Pigs
+-------------------------------------------------------
+
+Synopsis
+------------
+In this report we aimto show the effect of vitamin C on tooth growth in guine pigs.The report checks on the difference in means of different dosages and supplements given to the guinea pigs. A ttest is used to show whether there is a difference between the two groups. A p-value and the confidence interval of each test is reported. We observed a significance difference in the two supplements **orange juice** and **ascorbic acid** for dosage of **0.5mg** and **1.0mg**. The **2.0mg** dosage didnt have a significant difference.
+
+Data
+------
+This assignment makes use of toooth growth data from a the library datasets. The data shows the effect of Vitamin C on Tooth growth in guinea pigs.  The response is the length of odontoblasts (teeth) in each of 10 guinea pigs at each of three dose levels of Vitamin C (0.5, 1, and 2 mg) with each of two delivery methods OJ and VC (orange juice or ascorbic acid). The data has 60 observations on the three variables. 
+
+Loading and Summary of the Data
+---------------------------------
+
+```{r setoptions, echo=FALSE}
+library('knitr')
+opts_chunk$set(echo=F, results="show")
+```
+
+```{r packages,warning=F,include=FALSE}
+library(ggplot2)
+library(plyr)
+library(dplyr)
+library(xtable)
+library(gridExtra)
+library(doBy)
+#load the data
+tooth_data <- ToothGrowth
+```
+
+The table below shows the view of the top 10 values 
+
+```{r echo=F,results='asis',error=F,warning=F}
+
+kable(head(tooth_data, n=10), format = "markdown")
+
+```
+
+
+The table below shows a summary of the three variables
+
+```{r echo=F,results='asis',error=F,warning=F}
+
+kable(summary(tooth_data), format = "markdown")
+
+```
+
+
+The figure below shows a box plot of the length of tooth by supplement and dosage. We observe that the higher the dosage the longer the tooth was. As the graph shows the median of the 2mg dosage was similar for both supplements.
+
+
+```{r , echo=TRUE, fig.height=5.25, fig.width=5.6, fig.align='center' }
+g <- ggplot(tooth_data, aes(x=supp, y=len)) + geom_boxplot(aes(x=supp, y=len,fill =factor(dose))) + labs(title="Length of tooth by supplement and dosage",
+                                                                                                     y="Length of tooth", x="Supplement") +
+  guides(fill=guide_legend(title="Dosage")) + theme_bw()
+print(g)
+```
+
+
+
+Analysis of the data
+-----------------------
+Below we calculate the mean, SD and 95% CI /(confidence interval/) for each dosage per supplement. We calculate the CI for the t-distribution of the data.The table below shows the summary where *mean*, *count* , *se* , *sd* and *ci* is the mean , count, standard error, standard deviation and the CI  of tooth length respectively.
+
+```{r datasummary, cache=TRUE}
+#summary of the data
+tooth_summary <- ddply(tooth_data, c("dose", "supp"), summarise,
+               count    = sum(!is.na(len)),
+               mean = mean(len, na.rm=TRUE),
+               sd   = sd(len, na.rm=TRUE),
+               se   = sd / sqrt(count) ,
+               ci = se*(qt(.95/2 + .5, count-1)))
+```
+
+```{r echo=F,results='asis',error=F,warning=F}
+
+kable(tooth_summary, format = "markdown")
+
+```
+
+
+The graph below shows  the length with the error bars or CI included. The bar graph has the the standard error shown for range shown for each dosage per supplement. The line graph shows the CI for each supplement. We observe there is an overlap of the CI for 2mg dosage. The other shows a reduction in the mean of tooth length for VC supplement. 
+
+
+```{r plot2, echo=FALSE, fig.height=5.25, fig.width=5.6, fig.align='center'}
+p1 <- ggplot(tooth_summary, aes(x=factor(dose), y=mean, fill=supp)) +   geom_bar(position=position_dodge(), stat="identity", colour="red",  size=.3) +      # Thinner lines
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se),size=.3,width=.2,position=position_dodge(.9)) +
+  labs(title="The Effect of Vitamin C on\nTooth Growth", y="Length of tooth", x="Dose (mg)") +
+    scale_fill_hue(name="Supplement type",   breaks=c("OJ", "VC"),labels=c("Orange juice", "Ascorbic acid")) + theme_bw()
+ 
+pd <- position_dodge(.1)
+p2 <- ggplot(tooth_summary, aes(x=supp, y=mean, colour=factor(dose), group=dose)) + 
+  geom_errorbar(aes(ymin=mean-ci, ymax=mean+ci), colour="red", width=.1, position=pd) + geom_line(position=pd) +
+  geom_point(position=pd, size=3) + theme_bw() +  
+  labs(title="The Effect of Vitamin C on Tooth Growth \n by Supplement and the CI", y="Length of tooth", x="Supplement") + guides(fill=guide_legend(title="Dosage (mg)"))
+print(grid.arrange(p1, p2))
+
+```
+
+
+Finaly we do a ttest to confirm whether there is a significance difference between the means of VC and OJ supplement per dosage. 
+
+```{r ttest}
+#ttest on tthe data
+complete <- t.test(tooth_data$len~tooth_data$supp , var.equal = T)
+complete.conf <- complete$conf[1:2]
+complete.pvalue <- complete$p.value
+
+dose.5 <- tooth_data[tooth_data$dose == 0.5,]
+dose.1 <- tooth_data[tooth_data$dose == 1,]
+dose.2 <- tooth_data[tooth_data$dose == 2,]
+
+dose.5Test <- t.test(dose.5$len~dose.5$supp , var.equal = T)
+dose.1Test <- t.test(dose.1$len~dose.1$supp , var.equal = T)
+dose.2Test <- t.test(dose.2$len~dose.2$supp , var.equal = T)
+
+conf.5 <- dose.5Test$conf[1:2]
+conf.1 <- dose.1Test$conf[1:2]
+conf.2 <- dose.2Test$conf[1:2]
+
+pvalue.5 <- dose.5Test$p.value
+pvalue.1 <- dose.1Test$p.value
+pvalue.2 <- dose.2Test$p.value
+```
+
+The results of the test for showed that there was no significance difference in tooth length for **orange juice(OJ)** and **ascorbic acid(VC)** supplements without considering the dosage. The *pvalue* was `r complete.pvalue` and the *95% confidence interval* was `r complete.conf` . We decided to do a test per dosage between the groups
+
+**0.5mg Dosage Test**
+---------------------
+There was a significance differnce between the means of the 0.5mg **OJ**  and **VC**. The reported *pvalue* was `r pvalue.5 `  and the *95% confidence interval* was `r conf.5`. The 0.5mg VC dosage had a mean of `r dose.5Test$estimate[2]` which was lower than the OJ dosage mean. This concludes that Orange Juice had a higher effect on the tooth length for the 0.5mg dosage compared to ascorbic acid.
+
+**1mg Dosage Test**
+---------------------
+There was a significance differnce between the means of the 1mg **OJ**  and **VC**. The reported *pvalue* was `r pvalue.1 `  and the *95% confidence interval* was `r conf.1`. The 1mg OJ dosage had a mean of `r dose.1Test$estimate[1]` which was higher than the VC dosage mean. This concludes that Orange Juice had a higher effect on the tooth length for the 0.5mg dosage compared to ascorbic acid.
+
+**2mg Dosage Test**
+---------------------
+There was no significance differnce between the means of the 2mg **OJ**  and **VC**. The reported *pvalue* was `r pvalue.2 `  and the *95% confidence interval* was `r conf.2`. The 1mg reported mean for both supplements were `r dose.1Test$estimate[1:2]`. This concludes there was no significance effect difference between the two supplements.
+
+
